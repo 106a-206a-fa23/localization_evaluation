@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-        	'intermediate_node = localization_evaluation.intermediate_node:main'
+        	'intermediate_node = localization_evaluation.intermediate_node:main',
+            	'noisy_GPS = localization_evaluation.noisy_GPS:main',
         ],
     },
 )

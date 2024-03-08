@@ -262,37 +262,61 @@ class intermediate(Node):
 
         #compute errors between fused and gps when time is the closest
         errors = []
+        lateral_errors = []
         for i in range(len(fused_poses)):
             #find closest gps pose
             closest_index = np.argmin(np.abs(gps_poses[:,2] - fused_poses[i][2]))
             errors.append(np.linalg.norm(fused_poses[i][:2] - gps_poses[closest_index][:2]))
+            if closest_index < len(gps_poses)-1:
+                #compute lateral error
+                p0 = gps_poses[closest_index][:2]
+                p1 = gps_poses[closest_index+1][:2]
+                p = fused_poses[i][:2]
+                lateral_errors.append(np.linalg.norm(np.cross(p1-p0, p0-p))/np.linalg.norm(p1-p0))
+            
         errors = np.array(errors)
         self.get_logger().info('Error analysis for entire trajectory:')
         self.get_logger().info('Mean error: ' + str(np.mean(errors)))
         self.get_logger().info('Max error: ' + str(np.max(errors)))
         self.get_logger().info('Min error: ' + str(np.min(errors)))
         self.get_logger().info('Std error: ' + str(np.std(errors)))
+        self.get_logger().info('Lateral error: ' + str(np.mean(lateral_errors)))
+        self.get_logger().info('Max lateral error: ' + str(np.max(lateral_errors)))
+        self.get_logger().info('Min lateral error: ' + str(np.min(lateral_errors)))
+        self.get_logger().info('Std lateral error: ' + str(np.std(lateral_errors)))
+                               
 
         #Error analysis for gps denied zone
         if len(gps_poses_denied) > 0:
             errors = []
+            lateral_errors = []
             for i in range(len(gps_poses_denied)):
                 #zone i+1
                 for j in range(len(gps_poses_denied[i])):
                     #find closest fused pose for each gps pose in the zone
                     closest_index = np.argmin(np.abs(fused_poses_gps_denied[i][:,2] - gps_poses_denied[i][j][2]))
                     errors.append(np.linalg.norm(fused_poses_gps_denied[i][closest_index][:2] - gps_poses_denied[i][j][:2]))
+                    if closest_index < len(fused_poses_gps_denied[i])-1:
+                        #compute lateral error
+                        p0 = fused_poses_gps_denied[i][closest_index][:2]
+                        p1 = fused_poses_gps_denied[i][closest_index+1][:2]
+                        p = gps_poses_denied[i][j][:2]
+                        lateral_errors.append(np.linalg.norm(np.cross(p1-p0, p0-p))/np.linalg.norm(p1-p0))
             errors = np.array(errors)
             self.get_logger().info('Error analysis for gps denied zone:')
             self.get_logger().info('Mean error: ' + str(np.mean(errors)))
             self.get_logger().info('Max error: ' + str(np.max(errors)))
             self.get_logger().info('Min error: ' + str(np.min(errors)))
             self.get_logger().info('Std error: ' + str(np.std(errors)))
+            self.get_logger().info('Lateral error: ' + str(np.mean(lateral_errors)))
+            self.get_logger().info('Max lateral error: ' + str(np.max(lateral_errors)))
+            self.get_logger().info('Min lateral error: ' + str(np.min(lateral_errors)))
+            self.get_logger().info('Std lateral error: ' + str(np.std(lateral_errors)))
  
 def main(args=None):
 
     parser = argparse.ArgumentParser(description='Intermediate Node')
-    parser.add_argument('--time_interval_gps_denied', '-t', nargs='+' , type=int, default=None, help='List of time intervals (relative to first gps message received) in seconds where gps is denied. Example: -t 30 60 90 120 will create 2 gps denied zones: 30s to 60s and 90s to 120s. Default: None.')
+    parser.add_argument('--time_interval_gps_denied', '-t', nargs='+' , type=float, default=None, help='List of time intervals (relative to first gps message received) in seconds where gps is denied. Example: -t 30 60 90 120 will create 2 gps denied zones: 30s to 60s and 90s to 120s. Default: None.')
     parser.add_argument('--areas_gps_denied', '-a', nargs='+' , type=float, default=None, help='List of areas with center coordinates, widht and height x1 y1 w h .... (in meters) where gps is denied. Make sure to start Example: -a 0 0 10 10 will create a gps denied zone of 10x10m centered on (0,0). Default: None.')
     parser.add_argument('--random_gps_denied', type=bool, default=False, help='Randomly set gps denied zones. Default: False.')
     parser.add_argument('--show_plot', type=bool, default=False, help='Show plot after execution. Default: False.')
